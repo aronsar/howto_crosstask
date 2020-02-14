@@ -7,6 +7,8 @@ import numpy as np
 import json
 from allennlp.commands.elmo import ElmoEmbedder
 from collections import defaultdict
+from nltk.corpus import wordnet
+from nltk.stem.porter import PorterStemmer
 
 
 # MISSING_STEPS = defaultdict(dict)
@@ -68,19 +70,46 @@ def sentence_steps(sentence, nouns, task_steps):
     steps_found = set()
     for noun, task_step in zip(nouns, task_steps):
         if noun in sentence:
-            #sentence_vec = elmo.embed_sentence(sentence)
-            #split_task_step = task_step.split()
-            #task_step_vec = elmo.embed_sentence(split_task_step)
-            #n_i = split_task_step.index(noun)
-            s_i = sentence.index(noun)
-            #dist = scipy.spatial.distance.cosine(task_step_vec[2][n_i], sentence_vec[2][s_i])            
-            #if dist < .9:
-            sentence[s_i] += ">>>>>>>>"# + str(dist)[0:5]
+            # sentence_vec = elmo.embed_sentence(sentence)
+            # split_task_step = task_step.split()
+            # task_step_vec = elmo.embed_sentence(split_task_step)
+            # n_i = split_task_step.index(noun)
+            # s_i = sentence.index(noun)
+            # dist = scipy.spatial.distance.cosine(task_step_vec[2][n_i], sentence_vec[2][s_i])            
+            # if dist < .9:
+            #     sentence[s_i] += ">>>>>>>>"# + str(dist)[0:5]
             steps_found.add(task_step)
 
     # print(sentence)
     return steps_found
 
+
+def sentence_steps(sentence, syns_list, task_steps):
+    # returns a set of task steps that occur in sentence
+    # Case folding
+    porter = PorterStemmer()
+    for i, word in enumerate(sentence):
+        sentence[i] = porter.stem(word.casefold())
+    
+    steps_found = set()
+    for syns, task_step in zip(syns_list, task_steps):
+        for syn in syns:
+            if syn in sentence:
+                steps_found.add(task_step)
+                break
+
+    return steps_found
+
+def get_synonyms(word):
+    porter = PorterStemmer()
+    synonyms = []
+    for syn in wordnet.synsets(word):
+        for l in syn.lemmas():
+            name = l.name()
+            name = porter.stem(name.casefold())
+            synonyms.append(name)
+
+    return set(synonyms)
 
 def normalize(A):
     lengths = (A**2).sum(axis=1, keepdims=True)**.5

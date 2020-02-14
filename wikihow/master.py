@@ -46,19 +46,26 @@ def main():
 
     bestfits = np.argmax(yt_embed.dot(wh_embed.T), axis=1)
     print("Bestfits ...")
+    
     i = 0
     total_steps = 0
     missing_steps = defaultdict(dict)
     # for task in task_steps.keys():
     for task, vids in YT_meta.items():
         if task in primary_task_ids:
+            task_step_syns = []
+            for task_step_vocabs in split_task_steps[task]:
+                task_step_syn = []
+                for vocab in task_step_vocabs:
+                    task_step_syn.extend(utils.get_synonyms(vocab))
+                task_step_syns.append(task_step_syn)
+
             for vid in YT_meta[task]:
                 yt_title = YT_meta[task][vid]
 
                 bestfit_title = whtitles[bestfits[i]]
                 bestfit_article = str(bestfits[i]) + ".json"
                 article_path = os.path.join("content", bestfit_article)
-
                 with open(article_path) as f:
                     article_json = json.load(f)
 
@@ -70,7 +77,8 @@ def main():
                 
                 article_steps = set()
                 for sentence in article_sentences:
-                    article_steps.update(utils.sentence_steps(sentence, task_step_nouns[task], task_steps[task]))
+                    article_steps.update(utils.sentence_steps(sentence, task_step_syns, task_steps[task]))
+
 
                 missing_steps[task][vid] = [(j,step) for j,step in enumerate(task_steps[task]) if step not in article_steps]
                 i += 1
